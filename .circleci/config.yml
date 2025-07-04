@@ -1,0 +1,36 @@
+version: 2.1
+
+jobs:
+  ping-website:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Ping website to keep it alive
+          command: |
+            echo "Pinging website..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://nougat-f609.onrender.com/api/articles)
+            echo "Response code: $response"
+            if [ "$response" -eq 200 ]; then
+              echo "✅ Website is up and running!"
+            else
+              echo "❌ Website returned status code: $response"
+              exit 1
+            fi
+
+workflows:
+  scheduled-ping:
+    triggers:
+      - schedule:
+          cron: "*/10 * * * *"  # Every 10 minutes
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - ping-website
+
+  # Optional: Also ping on every commit
+  ping-on-commit:
+    jobs:
+      - ping-website
